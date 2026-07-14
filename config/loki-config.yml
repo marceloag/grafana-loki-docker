@@ -30,6 +30,7 @@ limits_config:
   ingestion_rate_mb: 8
   ingestion_burst_size_mb: 16
   max_query_lookback: 30d     # retención de 30 días
+  max_query_series: 5000      # paths/IPs únicos por bots de escaneo superan el default (500)
 
 compactor:
   working_directory: /loki/compactor
