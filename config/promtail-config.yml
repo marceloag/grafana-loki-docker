@@ -80,7 +80,7 @@ scrape_configs:
           - localhost
         labels:
           job: npm_access
-          __path__: /var/log/npm/proxy-host-*_access.log
+          __path__: /mnt/npm-logs/proxy-host-*_access.log
     pipeline_stages:
       - regex:
           source: filename

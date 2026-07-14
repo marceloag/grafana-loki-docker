@@ -42,7 +42,7 @@ services:
       - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro # logs del sistema host
       - /var/lib/docker/containers:/var/lib/docker/containers:ro # logs Docker
-      - ${NPM_LOGS_PATH}:/var/log/npm:ro # logs de Nginx Proxy Manager (stack separado)
+      - ${NPM_LOGS_PATH}:/mnt/npm-logs:ro # logs de Nginx Proxy Manager (stack separado)
     command: -config.file=/etc/promtail/config.yml
     networks:
       - loki-net
