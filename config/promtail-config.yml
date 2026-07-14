@@ -88,7 +88,7 @@ scrape_configs:
       - labels:
           proxy_host_id:
       - regex:
-          expression: '^(?P<remote_addr>\S+) \S+ \S+ \[(?P<time>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) \S+" (?P<status>\d{3}) (?P<bytes>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+          expression: '^\[(?P<time>[^\]]+)\]\s+(?P<cache_status>\S+)\s+(?P<status>\d+)\s+(?P<upstream_status>\S+)\s+(?P<bytes_sent>\S+)\s+(?P<method>\S+)\s+(?P<scheme>\S+)\s+(?P<host>\S+)\s+"(?P<path>[^"]*)"\s+\[Client (?P<remote_addr>[^\]]+)\]\s+\[Length (?P<length>[^\]]+)\]\s+\[Gzip (?P<gzip>[^\]]+)\]\s+\[Sent-to (?P<upstream>[^\]]+)\]\s+"(?P<referer>[^"]*)"\s+"(?P<user_agent>[^"]*)"'
       - labels:
           method:
           status:

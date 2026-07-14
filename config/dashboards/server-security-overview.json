@@ -157,7 +157,7 @@
           "datasource": { "type": "loki", "uid": "loki" },
           "queryType": "instant",
           "instant": true,
-          "expr": "topk(10, sum by (remote_addr) (count_over_time({job=\"npm_access\"} | regexp \"^(?P<remote_addr>\\\\S+)\" [$__range])))"
+          "expr": "topk(10, sum by (remote_addr) (count_over_time({job=\"npm_access\"} | regexp \"\\\\[Client (?P<remote_addr>[^\\\\]]+)\\\\]\" [$__range])))"
         }
       ]
     },
@@ -173,7 +173,7 @@
           "datasource": { "type": "loki", "uid": "loki" },
           "queryType": "instant",
           "instant": true,
-          "expr": "topk(10, sum by (path) (count_over_time({job=\"npm_access\"} | regexp \"\\\"(?P<method>\\\\S+) (?P<path>\\\\S+) \\\\S+\\\"\" [$__range])))"
+          "expr": "topk(10, sum by (path) (count_over_time({job=\"npm_access\"} | regexp \"\\\"(?P<path>[^\\\"]*)\\\"\\\\s*\\\\[Client\" [$__range])))"
         }
       ]
     },
