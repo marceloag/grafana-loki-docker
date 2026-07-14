@@ -7,6 +7,7 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 services:
   # ──────────────────────────────────────────
@@ -16,7 +17,7 @@ services:
     image: grafana/loki:2.9.5
     container_name: loki
     ports:
-      - "3100:3100"
+      - "3200:3100"
     volumes:
       - ./config/loki-config.yml:/etc/loki/local-config.yaml:ro
       - loki-data:/loki
@@ -41,6 +42,7 @@ services:
       - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro # logs del sistema host
       - /var/lib/docker/containers:/var/lib/docker/containers:ro # logs Docker
+      - ${NPM_LOGS_PATH}:/var/log/npm:ro # logs de Nginx Proxy Manager (stack separado)
     command: -config.file=/etc/promtail/config.yml
     networks:
       - loki-net
@@ -50,13 +52,51 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────
+  # Prometheus — métricas del sistema
+  # ──────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    networks:
+      - loki-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # node-exporter — métricas de host (CPU/RAM/disco/red)
+  # ──────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    networks:
+      - loki-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
   # Grafana — visualización y dashboards
   # ──────────────────────────────────────────
   grafana:
     image: grafana/grafana:10.4.2
     container_name: grafana
     ports:
-      - "3033:3000"
+      - "3035:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -65,9 +105,14 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana-datasource.yml:/etc/grafana/provisioning/datasources/loki.yml:ro
+      - ./config/grafana-datasource-prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./config/grafana-dashboards-provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
+      - ./config/dashboards:/etc/grafana/provisioning/dashboards/json:ro
     networks:
       - loki-net
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_started
     restart: unless-stopped

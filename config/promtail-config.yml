@@ -35,3 +35,60 @@ scrape_configs:
         target_label: service
       - source_labels: [__meta_docker_compose_project]
         target_label: project
+
+  # ── fail2ban (corre en el host, no en contenedor) ──
+  - job_name: fail2ban
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: fail2ban
+          host: docker-host
+          __path__: /var/log/fail2ban.log
+    pipeline_stages:
+      - match:
+          selector: '{job="fail2ban"} |~ "(Ban|Unban)"'
+          stages:
+            - regex:
+                expression: '^\S+\s+\S+\s+fail2ban\.actions\s+\[\d+\]:\s+\w+\s+\[(?P<jail>[\w-]+)\]\s+(?P<action>Ban|Unban)\s+(?P<ip>[0-9a-fA-F:.]+)'
+            - labels:
+                jail:
+                action:
+      - match:
+          selector: '{job="fail2ban"} |~ "Found"'
+          stages:
+            - regex:
+                expression: '^\S+\s+\S+\s+fail2ban\.filter\s+\[\d+\]:\s+\w+\s+\[(?P<jail>[\w-]+)\]\s+(?P<action>Found)\s+(?P<ip>[0-9a-fA-F:.]+)'
+            - labels:
+                jail:
+                action:
+
+  # ── auth.log (intentos de login SSH/PAM) ──
+  - job_name: auth
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: auth
+          host: docker-host
+          __path__: /var/log/auth.log
+
+  # ── Nginx Proxy Manager access logs (stack Docker separado en el mismo host) ──
+  - job_name: npm_access
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: npm_access
+          __path__: /var/log/npm/proxy-host-*_access.log
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: '.*proxy-host-(?P<proxy_host_id>\d+)_access\.log'
+      - labels:
+          proxy_host_id:
+      - regex:
+          expression: '^(?P<remote_addr>\S+) \S+ \S+ \[(?P<time>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) \S+" (?P<status>\d{3}) (?P<bytes>\d+) "(?P<referer>[^"]*)" "(?P<user_agent>[^"]*)"'
+      - labels:
+          method:
+          status:

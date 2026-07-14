@@ -1,0 +1,286 @@
+{
+  "title": "Server & Security Overview",
+  "uid": "server-security-overview",
+  "tags": ["security", "fail2ban", "nginx-proxy-manager", "server"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    { "id": 1, "type": "row", "title": "Fail2ban", "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 2,
+      "type": "logs",
+      "title": "Recent Ban / Unban Events",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 1, "w": 24, "h": 8 },
+      "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"fail2ban\"} | regexp \"\\\\[(?P<jail>[\\\\w-]+)\\\\]\\\\s+(?P<action>Ban|Unban)\\\\s+(?P<ip>[0-9a-fA-F:.]+)\" | line_format \"{{.action}} {{.ip}} (jail={{.jail}})\""
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Bans netos (rango visible)",
+      "description": "Aproximación: Ban - Unban en el rango visible. No es un gauge exacto del estado actual.",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 9, "w": 8, "h": 6 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 1, "color": "orange" }, { "value": 10, "color": "red" }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "textMode": "auto" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum(count_over_time({job=\"fail2ban\", action=\"Ban\"}[$__range])) - sum(count_over_time({job=\"fail2ban\", action=\"Unban\"}[$__range]))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Ban Events Rate by Jail",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 8, "y": 9, "w": 16, "h": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (jail) (count_over_time({job=\"fail2ban\", action=\"Ban\"}[$__interval]))",
+          "legendFormat": "{{jail}}"
+        }
+      ]
+    },
+
+    { "id": 5, "type": "row", "title": "Intentos de login fallidos", "gridPos": { "x": 0, "y": 15, "w": 24, "h": 1 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Fallidos (últimos 5m)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 16, "w": 8, "h": 6 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 5, "color": "orange" }, { "value": 20, "color": "red" }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "textMode": "auto" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "sum(count_over_time({job=\"auth\"} |~ \"Failed password\" [5m]))"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Fallidos (últimos 10m)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 8, "y": 16, "w": 8, "h": 6 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 8, "color": "orange" }, { "value": 30, "color": "red" }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "textMode": "auto" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "sum(count_over_time({job=\"auth\"} |~ \"Failed password\" [10m]))"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Fallidos (última 1h)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 16, "y": 16, "w": 8, "h": 6 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 20, "color": "orange" }, { "value": 100, "color": "red" }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "textMode": "auto" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "sum(count_over_time({job=\"auth\"} |~ \"Failed password\" [1h]))"
+        }
+      ]
+    },
+
+    { "id": 9, "type": "row", "title": "Nginx Proxy Manager — HTTP", "gridPos": { "x": 0, "y": 22, "w": 24, "h": 1 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request Rate",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 23, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum(count_over_time({job=\"npm_access\"}[$__interval]))",
+          "legendFormat": "requests"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Status Code Breakdown",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 12, "y": 23, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum(count_over_time({job=\"npm_access\", status=~\"2..\"}[$__interval]))", "legendFormat": "2xx" },
+        { "refId": "B", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum(count_over_time({job=\"npm_access\", status=~\"3..\"}[$__interval]))", "legendFormat": "3xx" },
+        { "refId": "C", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum(count_over_time({job=\"npm_access\", status=~\"4..\"}[$__interval]))", "legendFormat": "4xx" },
+        { "refId": "D", "datasource": { "type": "loki", "uid": "loki" }, "expr": "sum(count_over_time({job=\"npm_access\", status=~\"5..\"}[$__interval]))", "legendFormat": "5xx" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Top Client IPs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 0, "y": 31, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "topk(10, sum by (remote_addr) (count_over_time({job=\"npm_access\"} | regexp \"^(?P<remote_addr>\\\\S+)\" [$__range])))"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Top Requested Paths",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 8, "y": 31, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "topk(10, sum by (path) (count_over_time({job=\"npm_access\"} | regexp \"\\\"(?P<method>\\\\S+) (?P<path>\\\\S+) \\\\S+\\\"\" [$__range])))"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Top Proxy Hosts (by ID)",
+      "description": "Solo el ID numérico de proxy-host-N; NPM no expone el dominio en el log por defecto.",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "x": 16, "y": 31, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "queryType": "instant",
+          "instant": true,
+          "expr": "topk(10, sum by (proxy_host_id) (count_over_time({job=\"npm_access\"}[$__range])))"
+        }
+      ]
+    },
+
+    { "id": 15, "type": "row", "title": "Servidor", "gridPos": { "x": 0, "y": 39, "w": 24, "h": 1 }, "collapsed": false, "panels": [] },
+
+    {
+      "id": 16,
+      "type": "gauge",
+      "title": "CPU Usage %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 40, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 70, "color": "orange" }, { "value": 90, "color": "red" }] } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "gauge",
+      "title": "Memory Usage %",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 6, "y": 40, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "thresholds": { "mode": "absolute", "steps": [{ "value": 0, "color": "green" }, { "value": 70, "color": "orange" }, { "value": 90, "color": "red" }] } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Disk Usage % (by mountpoint)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 40, "w": 6, "h": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "instant": true,
+          "format": "table",
+          "expr": "100 - ((node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"}) * 100)"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "stat",
+      "title": "Uptime",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 18, "y": 40, "w": 6, "h": 6 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "time() - node_boot_time_seconds"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Network I/O",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 0, "y": 46, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "rx {{device}}" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "tx {{device}}" }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Load Average",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "x": 12, "y": 46, "w": 12, "h": 8 },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "node_load1", "legendFormat": "load1" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "node_load5", "legendFormat": "load5" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "node_load15", "legendFormat": "load15" }
+      ]
+    }
+  ]
+}
