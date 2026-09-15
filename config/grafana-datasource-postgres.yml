@@ -5,8 +5,11 @@ datasources:
     type: postgres
     uid: simon-postgres
     access: proxy
-    # Reached over the shared apastar network, same as Tempo reaches MinIO.
-    url: simon-postgresql:5432
+    # The app's database is the `psql` container (aliases: psql, db) on the
+    # apastar network — NOT `simon-postgresql`, which is a second, unused
+    # Postgres 17 on the same host. The workers reach the same instance, via
+    # the public 5.78.147.71:54320.
+    url: psql:5432
     database: simon
     user: ${GRAFANA_PG_USER}
     isDefault: false
