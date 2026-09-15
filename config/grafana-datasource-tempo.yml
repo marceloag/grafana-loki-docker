@@ -1,0 +1,20 @@
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      # Salto traza -> logs de ese servicio en Loki.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: '-5m'
+        spanEndTimeShift: '5m'
+        filterByTraceID: true
+        tags:
+          - key: service.name
+            value: container

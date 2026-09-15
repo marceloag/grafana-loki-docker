@@ -1,0 +1,15 @@
+# Copiar a .env (ignorado por git) y rellenar.
+
+# Ruta en el host a los logs de Nginx Proxy Manager, que Promtail lee.
+NPM_LOGS_PATH=/ruta/a/npm/logs
+
+# Credenciales de MinIO — Tempo guarda las trazas en el bucket tempo-traces.
+# Mismos valores que el .env de simon-mvp (MINIO_ROOT_USER / MINIO_ROOT_PASSWORD).
+MINIO_ROOT_USER=
+MINIO_ROOT_PASSWORD=
+
+# Bearer que valida el Collector en su puerto público (4319), usado solo por
+# Vercel. Generar con:  openssl rand -base64 32
+# El mismo valor va en Vercel como OTEL_EXPORTER_OTLP_HEADERS.
+# Si se filtra, un tercero puede INYECTAR trazas falsas, no leer las existentes.
+OTEL_INGEST_TOKEN=

@@ -1,0 +1,48 @@
+# Tempo 2.10.x — modo monolítico (todos los componentes in-process).
+# Ver ADR 0001 de simon-mvp: docs/adr/0001-observabilidad-otel.md
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+
+# Tempo solo recibe del Collector, nunca directo de las apps.
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # Retención de trazas: 14 días.
+    block_retention: 336h
+    compacted_block_retention: 1h
+
+storage:
+  trace:
+    # S3 desde el principio, aunque hoy apunte a MinIO: el día que se migre a
+    # S3 real solo cambian endpoint y credenciales, no los bloques.
+    backend: s3
+    s3:
+      bucket: tempo-traces
+      # container_name del MinIO de simon-mvp (ojo: lleva doble "i").
+      endpoint: simon-miniio:9000
+      access_key: ${MINIO_ROOT_USER}
+      secret_key: ${MINIO_ROOT_PASSWORD}
+      region: us-east-1
+      insecure: true        # HTTP dentro de la red Docker
+      forcepathstyle: true  # necesario con MinIO
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# El metrics-generator llega en la fase 4 (SIMON-270). Activarlo requiere
+# arrancar Prometheus con --web.enable-remote-write-receiver.

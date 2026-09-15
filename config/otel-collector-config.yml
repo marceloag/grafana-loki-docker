@@ -1,0 +1,58 @@
+# OTel Collector — única puerta de entrada de trazas.
+# Dos caminos (ver ADR 0001, decisión 15):
+#   - workers del VPS  -> red Docker interna, sin TLS ni token
+#   - Vercel           -> Nginx Proxy Manager (TLS) -> aquí, con bearer
+# Ver ADR 0001 de simon-mvp: docs/adr/0001-observabilidad-otel.md
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  bearertokenauth:
+    scheme: Bearer
+    token: ${env:OTEL_INGEST_TOKEN}
+
+receivers:
+  # Puerto interno: los workers del VPS. Sin autenticación — nunca sale de la máquina.
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Puerto público: solo Vercel, detrás de NPM. Exige bearer.
+  otlp/public:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4319
+        auth:
+          authenticator: bearertokenauth
+
+processors:
+  # Freno de mano: si el Collector se acerca al límite, rechaza en vez de morir.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  extensions: [health_check, bearertokenauth]
+  pipelines:
+    traces:
+      receivers: [otlp, otlp/public]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+  telemetry:
+    logs:
+      level: info
+
+# Sin tail sampling: 100% de las trazas (ADR 0001, decisión 13).
+# Revisar cuando el volumen crezca.

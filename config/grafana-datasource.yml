@@ -10,3 +10,13 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
+      # Salto log -> traza. Matcher regex, NO label: la structured metadata en
+      # Loki 2.9.5 es experimental y exigiría schema v13 + TSDB.
+      # Depende de que el logger JSON emita "trace_id" (SIMON-259).
+      derivedFields:
+        - name: TraceID
+          matcherType: regex
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: '${__value.raw}'
+          urlDisplayLabel: 'Ver traza'
+          datasourceUid: tempo

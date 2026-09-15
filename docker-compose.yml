@@ -3,11 +3,17 @@ version: "3.8"
 networks:
   loki-net:
     driver: bridge
+  # Red externa de simon-mvp: da acceso a simon-miniio (almacen de trazas)
+  # y permite que simon-workers alcance al collector sin salir a internet.
+  apastar:
+    name: apastar
+    external: true
 
 volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  tempo-data:
 
 services:
   # ──────────────────────────────────────────
@@ -91,6 +97,46 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────
+  # Tempo — almacén de trazas
+  # ──────────────────────────────────────────
+  tempo:
+    image: grafana/tempo:2.10.8
+    container_name: tempo
+    command: -config.file=/etc/tempo/tempo.yml -config.expand-env=true
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./config/tempo-config.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - loki-net
+      - apastar          # para alcanzar simon-miniio
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # OTel Collector — única puerta de entrada de trazas
+  # ──────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.109.0
+    container_name: otel-collector
+    command: --config=/etc/otel/config.yml
+    environment:
+      - OTEL_INGEST_TOKEN=${OTEL_INGEST_TOKEN}
+    ports:
+      # Solo el puerto público se publica: lo consume Nginx Proxy Manager.
+      # El 4318 (interno) NO se publica — los workers llegan por red Docker.
+      - "127.0.0.1:4319:4319"
+    volumes:
+      - ./config/otel-collector-config.yml:/etc/otel/config.yml:ro
+    networks:
+      - loki-net
+      - apastar          # para que simon-workers lo alcance
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
   # Grafana — visualización y dashboards
   # ──────────────────────────────────────────
   grafana:
@@ -107,6 +153,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ./config/grafana-datasource.yml:/etc/grafana/provisioning/datasources/loki.yml:ro
       - ./config/grafana-datasource-prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./config/grafana-datasource-tempo.yml:/etc/grafana/provisioning/datasources/tempo.yml:ro
       - ./config/grafana-dashboards-provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
       - ./config/dashboards:/etc/grafana/provisioning/dashboards/json:ro
     networks:
@@ -115,5 +162,7 @@ services:
       loki:
         condition: service_healthy
       prometheus:
+        condition: service_started
+      tempo:
         condition: service_started
     restart: unless-stopped
