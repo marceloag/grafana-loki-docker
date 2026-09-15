@@ -17,6 +17,6 @@ datasources:
         - name: TraceID
           matcherType: regex
           matcherRegex: '"trace_id":"(\w+)"'
-          url: '${__value.raw}'
+          url: '$${__value.raw}'
           urlDisplayLabel: 'Ver traza'
           datasourceUid: tempo
