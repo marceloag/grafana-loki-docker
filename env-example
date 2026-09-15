@@ -13,3 +13,9 @@ MINIO_ROOT_PASSWORD=
 # El mismo valor va en Vercel como OTEL_EXPORTER_OTLP_HEADERS.
 # Si se filtra, un tercero puede INYECTAR trazas falsas, no leer las existentes.
 OTEL_INGEST_TOKEN=
+
+# Credenciales del rol de solo lectura con el que Grafana consulta pipeline_runs.
+# Crear el rol en Postgres antes (ver el issue SIMON-266); NO reutilizar el
+# usuario de la aplicación: Grafana solo necesita SELECT sobre una tabla.
+GRAFANA_PG_USER=grafana_ro
+GRAFANA_PG_PASSWORD=

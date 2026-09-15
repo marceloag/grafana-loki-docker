@@ -149,15 +149,20 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GRAFANA_PG_USER=${GRAFANA_PG_USER}
+      - GRAFANA_PG_PASSWORD=${GRAFANA_PG_PASSWORD}
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana-datasource.yml:/etc/grafana/provisioning/datasources/loki.yml:ro
       - ./config/grafana-datasource-prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
       - ./config/grafana-datasource-tempo.yml:/etc/grafana/provisioning/datasources/tempo.yml:ro
+      - ./config/grafana-datasource-postgres.yml:/etc/grafana/provisioning/datasources/postgres.yml:ro
+      - ./config/alerting:/etc/grafana/provisioning/alerting:ro
       - ./config/grafana-dashboards-provider.yml:/etc/grafana/provisioning/dashboards/provider.yml:ro
       - ./config/dashboards:/etc/grafana/provisioning/dashboards/json:ro
     networks:
       - loki-net
+      - apastar          # para alcanzar simon-postgresql (dashboard de pipeline)
     depends_on:
       loki:
         condition: service_healthy

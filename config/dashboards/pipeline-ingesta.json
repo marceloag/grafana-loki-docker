@@ -1,0 +1,268 @@
+{
+  "uid": "simon-pipeline",
+  "title": "Simon · Pipeline de ingesta",
+  "tags": ["simon", "pipeline", "otel"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Resumen",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Documentos procesados",
+      "description": "Documentos distintos que completaron al menos un stage en el rango.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(DISTINCT document_id)::int AS \"Documentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Ejecuciones fallidas",
+      "description": "Intentos con status='failed', reintentos incluidos. Rojo a partir de uno.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*)::int AS \"Fallos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'failed'"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Coste de LLM",
+      "description": "Suma de cost_usd. Los modelos sin precio (Cloudflare) cuentan tokens pero no coste — el total es un piso, no un techo.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyUSD", "decimals": 4 },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(sum(cost_usd), 0) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Reintentos",
+      "description": "Ejecuciones con attempt > 1. Cada una es trabajo repetido, y si llamó a un LLM, dinero gastado dos veces.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*)::int AS \"Reintentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND attempt > 1"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Latencia",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }
+    },
+    {
+      "type": "barchart",
+      "title": "Duración por stage (p95)",
+      "description": "Percentil 95 de duration_ms por stage. Una sola medida: dónde se va el tiempo.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "lineWidth": 0, "fillOpacity": 90, "axisSoftMin": 0 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "xTickLabelRotation": 0,
+        "legend": { "showLegend": false }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT stage AS \"Stage\",\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS \"p95\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'\nGROUP BY stage\nORDER BY 2 DESC"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latencia por stage en el tiempo (p95)",
+      "description": "Misma medida, por día. Sirve para ver si algo se degradó, no para comparar stages entre sí.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 7 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "auto", "pointSize": 8 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       stage AS metric,\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'\nGROUP BY 1, 2\nORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Coste y uso",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }
+    },
+    {
+      "type": "barchart",
+      "title": "Coste por organización",
+      "description": "Suma de cost_usd agrupada por tenant. Esta es la pregunta que antes no se podía responder.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "custom": { "lineWidth": 0, "fillOpacity": 90, "axisSoftMin": 0 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "legend": { "showLegend": false }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(organization_id, 'sin organización') AS \"Organización\",\n       sum(cost_usd) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND cost_usd IS NOT NULL\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 15"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Coste diario de LLM",
+      "description": "Lo que vigila la alerta de gasto.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4,
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "auto", "pointSize": 8 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "showLegend": false },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       sum(cost_usd) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\nGROUP BY 1\nORDER BY 1"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Fallos",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }
+    },
+    {
+      "type": "table",
+      "title": "Últimas ejecuciones fallidas",
+      "description": "El trace_id enlaza con la traza en Tempo.",
+      "datasource": { "type": "postgres", "uid": "simon-postgres" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 27 },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "trace_id" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Ver traza en Tempo",
+                    "url": "/explore?left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22query%22:%22${__value.raw}%22,%22queryType%22:%22traceql%22%7D%5D%7D",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT created_at AS \"Cuándo\",\n       stage AS \"Stage\",\n       attempt AS \"Intento\",\n       duration_ms AS \"ms\",\n       left(error, 120) AS \"Error\",\n       document_id AS \"Documento\",\n       trace_id\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'failed'\nORDER BY created_at DESC\nLIMIT 50"
+        }
+      ]
+    }
+  ]
+}

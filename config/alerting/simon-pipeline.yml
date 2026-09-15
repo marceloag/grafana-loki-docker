@@ -1,0 +1,56 @@
+apiVersion: 1
+
+# Una sola alerta, a propósito. Alertar antes de conocer la línea base produce
+# avisos que la gente aprende a ignorar. El gasto de LLM es la excepción: es el
+# único fallo que es silencioso y caro a la vez.
+#
+# UMBRAL: 5 USD/día es una suposición inicial. A día de hoy un documento cuesta
+# ~0,004 USD en embeddings, así que esto es holgado. Ajústalo cuando sepas cuál
+# es tu gasto normal.
+
+groups:
+  - orgId: 1
+    name: simon-pipeline
+    folder: Simon
+    interval: 1h
+    rules:
+      - uid: simon-llm-daily-cost
+        title: Gasto diario de LLM por encima del umbral
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: El pipeline gastó {{ $values.A }} USD en las últimas 24h
+          description: >-
+            Umbral configurado en 5 USD/día. Mira el panel "Coste por
+            organización" del dashboard "Simon · Pipeline de ingesta" para ver
+            de qué tenant viene, y la tabla de fallos por si está reintentando
+            en bucle — cada reintento de un stage con LLM se cobra otra vez.
+        labels:
+          servicio: pipeline
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 86400
+              to: 0
+            datasourceUid: simon-postgres
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              rawSql: >-
+                SELECT COALESCE(sum(cost_usd), 0) AS coste
+                FROM pipeline_runs
+                WHERE created_at > now() - interval '24 hours'
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params:
+                      - 5
