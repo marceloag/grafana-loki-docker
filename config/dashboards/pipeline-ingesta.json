@@ -55,7 +55,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(DISTINCT document_id)::int AS \"Documentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'"
+          "rawSql": "SELECT count(DISTINCT r.document_id)::int AS \"Documentos\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.status = 'completed'"
         }
       ]
     },
@@ -107,7 +107,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(*)::int AS \"Fallos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'failed'"
+          "rawSql": "SELECT count(*)::int AS \"Fallos\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.status = 'failed'"
         }
       ]
     },
@@ -148,7 +148,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(sum(cost_usd), 0) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org'"
+          "rawSql": "SELECT COALESCE(sum(r.cost_usd), 0) AS \"Coste\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org'"
         }
       ]
     },
@@ -182,7 +182,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(*)::int AS \"Reintentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND attempt > 1"
+          "rawSql": "SELECT count(*)::int AS \"Reintentos\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.attempt > 1"
         }
       ]
     },
@@ -233,7 +233,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT stage AS \"Stage\",\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS \"p95\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'\nGROUP BY stage\nORDER BY 2 DESC"
+          "rawSql": "SELECT r.stage AS \"Stage\",\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY r.duration_ms) AS \"p95\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.status = 'completed'\nGROUP BY r.stage\nORDER BY 2 DESC"
         }
       ]
     },
@@ -278,7 +278,7 @@
         {
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       stage AS metric,\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'\nGROUP BY 1, 2\nORDER BY 1"
+          "rawSql": "SELECT date_trunc('day', r.created_at) AS time,\n       r.stage AS metric,\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY r.duration_ms) AS value\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.status = 'completed'\nGROUP BY 1, 2\nORDER BY 1"
         }
       ]
     },
@@ -329,7 +329,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(o.name, r.organization_id, 'sin organización') AS \"Organización\",\n       sum(r.cost_usd) AS \"Coste\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND r.cost_usd IS NOT NULL\n  AND COALESCE(r.organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 15"
+          "rawSql": "SELECT COALESCE(o.name, r.organization_id, 'sin organización') AS \"Organización\",\n       sum(r.cost_usd) AS \"Coste\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND r.cost_usd IS NOT NULL\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 15"
         }
       ]
     },
@@ -372,7 +372,7 @@
         {
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       sum(cost_usd) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT date_trunc('day', r.created_at) AS time,\n       sum(r.cost_usd) AS value\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 1"
         }
       ]
     },
@@ -434,7 +434,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT created_at AS \"Cuándo\",\n       stage AS \"Stage\",\n       attempt AS \"Intento\",\n       duration_ms AS \"ms\",\n       left(error, 120) AS \"Error\",\n       document_id AS \"Documento\",\n       trace_id\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'failed'\nORDER BY created_at DESC\nLIMIT 50"
+          "rawSql": "SELECT r.created_at AS \"Cuándo\",\n       r.stage AS \"Stage\",\n       r.attempt AS \"Intento\",\n       r.duration_ms AS \"ms\",\n       left(r.error, 120) AS \"Error\",\n       r.document_id AS \"Documento\",\n       r.trace_id\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND COALESCE(o.name, r.organization_id, '') LIKE '$org' AND r.status = 'failed'\nORDER BY r.created_at DESC\nLIMIT 50"
         }
       ]
     }
@@ -450,7 +450,7 @@
           "uid": "simon-postgres"
         },
         "definition": "organizaciones con actividad en el pipeline",
-        "query": "SELECT o.name AS __text, o.id AS __value\nFROM organization o\nWHERE o.id IN (SELECT DISTINCT organization_id FROM pipeline_runs WHERE organization_id IS NOT NULL)\nORDER BY 1",
+        "query": "SELECT DISTINCT COALESCE(o.name, r.organization_id) AS organizacion\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE r.organization_id IS NOT NULL\nORDER BY 1",
         "includeAll": true,
         "allValue": "%",
         "multi": false,
