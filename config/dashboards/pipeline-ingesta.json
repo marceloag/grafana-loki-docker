@@ -452,12 +452,12 @@
         "definition": "organizaciones con actividad en el pipeline",
         "query": "SELECT DISTINCT COALESCE(o.name, r.organization_id) AS organizacion\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE r.organization_id IS NOT NULL\nORDER BY 1",
         "includeAll": true,
-        "allValue": "%",
+        "allValue": "'%'",
         "multi": false,
         "current": {
           "selected": true,
           "text": "Todas",
-          "value": "%"
+          "value": "'%'"
         },
         "refresh": 1,
         "sort": 1,
