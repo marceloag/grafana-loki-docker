@@ -1,0 +1,141 @@
+{
+  "uid": "simon-red",
+  "title": "Simon · Métricas RED",
+  "tags": ["simon", "otel", "red"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Servicio",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(traces_spanmetrics_calls_total, service)",
+        "query": { "query": "label_values(traces_spanmetrics_calls_total, service)", "refId": "A" },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": { "selected": true, "text": "Todos", "value": "$__all" },
+        "refresh": 1,
+        "sort": 1
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "De dónde salen estos números",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Tempo las deriva de los mismos spans que ya recibe — no hay instrumentación adicional. Cubren los dos servicios: **simon-workers** (pipeline) y **simon-web** (app en Vercel).\n\nSolo existen para spans llegados **después** de activar el metrics-generator, así que no hay histórico anterior al 2026-09-16. Para el detalle de una ejecución concreta, ve a Explore → Tempo."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Llamadas por segundo",
+      "description": "traces_spanmetrics_calls_total, por nombre de span.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 3 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "auto", "pointSize": 8 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (span_name) (rate(traces_spanmetrics_calls_total{service=~\"$service\"}[5m]))",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latencia p95 por span",
+      "description": "Del histograma traces_spanmetrics_latency. Histogramas clásicos: los native histograms siguen siendo experimentales en Prometheus 2.53.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 3 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "auto", "pointSize": 8 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket{service=~\"$service\"}[5m])))",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Spans con error por segundo",
+      "description": "status_code = STATUS_CODE_ERROR. Si esto sube, la tabla de fallos del dashboard de pipeline dice cuál.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "auto", "pointSize": 8 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (service, span_name) (rate(traces_spanmetrics_calls_total{status_code=\"STATUS_CODE_ERROR\", service=~\"$service\"}[5m]))",
+          "legendFormat": "{{service}} · {{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Spans más frecuentes",
+      "description": "Volumen acumulado en el rango. Sirve para saber qué domina el tráfico antes de optimizar nada.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "lineWidth": 0, "fillOpacity": 90, "axisSoftMin": 0 }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "legend": { "showLegend": false }
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (span_name) (increase(traces_spanmetrics_calls_total{service=~\"$service\"}[$__range])))",
+          "legendFormat": "{{span_name}}",
+          "format": "time_series",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

@@ -55,7 +55,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(DISTINCT document_id)::int AS \"Documentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'"
+          "rawSql": "SELECT count(DISTINCT document_id)::int AS \"Documentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'"
         }
       ]
     },
@@ -107,7 +107,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(*)::int AS \"Fallos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'failed'"
+          "rawSql": "SELECT count(*)::int AS \"Fallos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'failed'"
         }
       ]
     },
@@ -148,7 +148,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(sum(cost_usd), 0) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)"
+          "rawSql": "SELECT COALESCE(sum(cost_usd), 0) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org'"
         }
       ]
     },
@@ -182,7 +182,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT count(*)::int AS \"Reintentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND attempt > 1"
+          "rawSql": "SELECT count(*)::int AS \"Reintentos\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND attempt > 1"
         }
       ]
     },
@@ -233,7 +233,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT stage AS \"Stage\",\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS \"p95\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'\nGROUP BY stage\nORDER BY 2 DESC"
+          "rawSql": "SELECT stage AS \"Stage\",\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS \"p95\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'\nGROUP BY stage\nORDER BY 2 DESC"
         }
       ]
     },
@@ -278,7 +278,7 @@
         {
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       stage AS metric,\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'completed'\nGROUP BY 1, 2\nORDER BY 1"
+          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       stage AS metric,\n       percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'completed'\nGROUP BY 1, 2\nORDER BY 1"
         }
       ]
     },
@@ -295,7 +295,7 @@
     {
       "type": "barchart",
       "title": "Coste por organización",
-      "description": "Suma de cost_usd agrupada por tenant. Esta es la pregunta que antes no se podía responder.",
+      "description": "Suma de cost_usd por tenant, con el nombre de la organización resuelto desde la tabla organization. Esta es la pregunta que antes no se podía responder.",
       "datasource": {
         "type": "postgres",
         "uid": "simon-postgres"
@@ -329,7 +329,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(organization_id, 'sin organización') AS \"Organización\",\n       sum(cost_usd) AS \"Coste\"\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND cost_usd IS NOT NULL\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 15"
+          "rawSql": "SELECT COALESCE(o.name, r.organization_id, 'sin organización') AS \"Organización\",\n       sum(r.cost_usd) AS \"Coste\"\nFROM pipeline_runs r\nLEFT JOIN organization o ON o.id = r.organization_id\nWHERE $__timeFilter(r.created_at)\n  AND r.cost_usd IS NOT NULL\n  AND COALESCE(r.organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 2 DESC\nLIMIT 15"
         }
       ]
     },
@@ -372,7 +372,7 @@
         {
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       sum(cost_usd) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT date_trunc('day', created_at) AS time,\n       sum(cost_usd) AS value\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org'\nGROUP BY 1\nORDER BY 1"
         }
       ]
     },
@@ -434,154 +434,35 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT created_at AS \"Cuándo\",\n       stage AS \"Stage\",\n       attempt AS \"Intento\",\n       duration_ms AS \"ms\",\n       left(error, 120) AS \"Error\",\n       document_id AS \"Documento\",\n       trace_id\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'failed'\nORDER BY created_at DESC\nLIMIT 50"
-        }
-      ]
-    },
-    {
-      "type": "row",
-      "title": "Métricas RED (derivadas de los spans por Tempo)",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 37
-      }
-    },
-    {
-      "type": "timeseries",
-      "title": "Llamadas por segundo, por span",
-      "description": "traces_spanmetrics_calls_total. Sale de los mismos spans, sin instrumentar nada extra.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 38
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "showPoints": "auto",
-            "pointSize": 8
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum by (span_name) (rate(traces_spanmetrics_calls_total[5m]))",
-          "legendFormat": "{{span_name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Latencia p95 por span",
-      "description": "Del histograma traces_spanmetrics_latency. Cubre los dos servicios — simon-workers y simon-web — sin una sola línea de código.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 38
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 0,
-            "showPoints": "auto",
-            "pointSize": 8
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket[5m])))",
-          "legendFormat": "{{span_name}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Spans con error por segundo",
-      "description": "Misma métrica filtrada por status_code. Si esto sube, la tabla de fallos de arriba dice cuál.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 47
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "showPoints": "auto",
-            "pointSize": 8
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum by (service, span_name) (rate(traces_spanmetrics_calls_total{status_code=\"STATUS_CODE_ERROR\"}[5m]))",
-          "legendFormat": "{{service}} · {{span_name}}",
-          "refId": "A"
+          "rawSql": "SELECT created_at AS \"Cuándo\",\n       stage AS \"Stage\",\n       attempt AS \"Intento\",\n       duration_ms AS \"ms\",\n       left(error, 120) AS \"Error\",\n       document_id AS \"Documento\",\n       trace_id\nFROM pipeline_runs\nWHERE $__timeFilter(created_at)\n  AND COALESCE(organization_id, '') LIKE '$org' AND status = 'failed'\nORDER BY created_at DESC\nLIMIT 50"
         }
       ]
     }
-  ]
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "org",
+        "label": "Organización",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "simon-postgres"
+        },
+        "definition": "organizaciones con actividad en el pipeline",
+        "query": "SELECT o.name AS __text, o.id AS __value\nFROM organization o\nWHERE o.id IN (SELECT DISTINCT organization_id FROM pipeline_runs WHERE organization_id IS NOT NULL)\nORDER BY 1",
+        "includeAll": true,
+        "allValue": "%",
+        "multi": false,
+        "current": {
+          "selected": true,
+          "text": "Todas",
+          "value": "%"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  }
 }
