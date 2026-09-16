@@ -1,26 +1,52 @@
 {
   "uid": "simon-pipeline",
   "title": "Simon · Pipeline de ingesta",
-  "tags": ["simon", "pipeline", "otel"],
+  "tags": [
+    "simon",
+    "pipeline",
+    "otel"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
   "refresh": "5m",
-  "time": { "from": "now-7d", "to": "now" },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
   "panels": [
     {
       "type": "row",
       "title": "Resumen",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      }
     },
     {
       "type": "stat",
       "title": "Documentos procesados",
       "description": "Documentos distintos que completaron al menos un stage en el rango.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "colorMode": "none",
         "graphMode": "none",
         "textMode": "value"
@@ -37,22 +63,42 @@
       "type": "stat",
       "title": "Ejecuciones fallidas",
       "description": "Intentos con status='failed', reintentos incluidos. Rojo a partir de uno.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "fieldConfig": {
         "defaults": {
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "text", "value": null },
-              { "color": "red", "value": 1 }
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
             ]
           }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "colorMode": "value",
         "graphMode": "none",
         "textMode": "value"
@@ -69,14 +115,31 @@
       "type": "stat",
       "title": "Coste de LLM",
       "description": "Suma de cost_usd. Los modelos sin precio (Cloudflare) cuentan tokens pero no coste — el total es un piso, no un techo.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
       "fieldConfig": {
-        "defaults": { "unit": "currencyUSD", "decimals": 4 },
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "colorMode": "none",
         "graphMode": "none",
         "textMode": "value"
@@ -93,10 +156,24 @@
       "type": "stat",
       "title": "Reintentos",
       "description": "Ejecuciones con attempt > 1. Cada una es trabajo repetido, y si llamó a un LLM, dinero gastado dos veces.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "colorMode": "none",
         "graphMode": "none",
         "textMode": "value"
@@ -112,18 +189,35 @@
     {
       "type": "row",
       "title": "Latencia",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      }
     },
     {
       "type": "barchart",
       "title": "Duración por stage (p95)",
       "description": "Percentil 95 de duration_ms por stage. Una sola medida: dónde se va el tiempo.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 7 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "lineWidth": 0, "fillOpacity": 90, "axisSoftMin": 0 }
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 90,
+            "axisSoftMin": 0
+          }
         },
         "overrides": []
       },
@@ -131,7 +225,9 @@
         "orientation": "horizontal",
         "showValue": "always",
         "xTickLabelRotation": 0,
-        "legend": { "showLegend": false }
+        "legend": {
+          "showLegend": false
+        }
       },
       "targets": [
         {
@@ -145,18 +241,38 @@
       "type": "timeseries",
       "title": "Latencia por stage en el tiempo (p95)",
       "description": "Misma medida, por día. Sirve para ver si algo se degradó, no para comparar stages entre sí.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 7 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "custom": { "lineWidth": 2, "fillOpacity": 0, "showPoints": "auto", "pointSize": 8 }
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
@@ -169,26 +285,45 @@
     {
       "type": "row",
       "title": "Coste y uso",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      }
     },
     {
       "type": "barchart",
       "title": "Coste por organización",
       "description": "Suma de cost_usd agrupada por tenant. Esta es la pregunta que antes no se podía responder.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 17 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "currencyUSD",
           "decimals": 4,
-          "custom": { "lineWidth": 0, "fillOpacity": 90, "axisSoftMin": 0 }
+          "custom": {
+            "lineWidth": 0,
+            "fillOpacity": 90,
+            "axisSoftMin": 0
+          }
         },
         "overrides": []
       },
       "options": {
         "orientation": "horizontal",
         "showValue": "always",
-        "legend": { "showLegend": false }
+        "legend": {
+          "showLegend": false
+        }
       },
       "targets": [
         {
@@ -202,19 +337,36 @@
       "type": "timeseries",
       "title": "Coste diario de LLM",
       "description": "Lo que vigila la alerta de gasto.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 17 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "currencyUSD",
           "decimals": 4,
-          "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "auto", "pointSize": 8 }
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": { "showLegend": false },
-        "tooltip": { "mode": "single" }
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
       },
       "targets": [
         {
@@ -227,19 +379,39 @@
     {
       "type": "row",
       "title": "Fallos",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      }
     },
     {
       "type": "table",
       "title": "Últimas ejecuciones fallidas",
       "description": "El trace_id enlaza con la traza en Tempo.",
-      "datasource": { "type": "postgres", "uid": "simon-postgres" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 27 },
+      "datasource": {
+        "type": "postgres",
+        "uid": "simon-postgres"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "left" } },
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "trace_id" },
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
             "properties": [
               {
                 "id": "links",
@@ -255,12 +427,159 @@
           }
         ]
       },
-      "options": { "showHeader": true },
+      "options": {
+        "showHeader": true
+      },
       "targets": [
         {
           "format": "table",
           "rawQuery": true,
           "rawSql": "SELECT created_at AS \"Cuándo\",\n       stage AS \"Stage\",\n       attempt AS \"Intento\",\n       duration_ms AS \"ms\",\n       left(error, 120) AS \"Error\",\n       document_id AS \"Documento\",\n       trace_id\nFROM pipeline_runs\nWHERE $__timeFilter(created_at) AND status = 'failed'\nORDER BY created_at DESC\nLIMIT 50"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Métricas RED (derivadas de los spans por Tempo)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Llamadas por segundo, por span",
+      "description": "traces_spanmetrics_calls_total. Sale de los mismos spans, sin instrumentar nada extra.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (span_name) (rate(traces_spanmetrics_calls_total[5m]))",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latencia p95 por span",
+      "description": "Del histograma traces_spanmetrics_latency. Cubre los dos servicios — simon-workers y simon-web — sin una sola línea de código.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket[5m])))",
+          "legendFormat": "{{span_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Spans con error por segundo",
+      "description": "Misma métrica filtrada por status_code. Si esto sube, la tabla de fallos de arriba dice cuál.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto",
+            "pointSize": 8
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (service, span_name) (rate(traces_spanmetrics_calls_total{status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "legendFormat": "{{service}} · {{span_name}}",
+          "refId": "A"
         }
       ]
     }

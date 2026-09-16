@@ -72,6 +72,10 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=30d
+      # Receptor de remote-write: por aquí entran las métricas RED que el
+      # metrics-generator de Tempo deriva de los spans. Flag estable en 2.53,
+      # pese a estar marcado como deprecado en favor de la config de web.
+      - --web.enable-remote-write-receiver
     networks:
       - loki-net
     restart: unless-stopped
