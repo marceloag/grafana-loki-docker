@@ -10,3 +10,20 @@ scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
+
+  # Sonda Vercel -> VPS: cada scrape ejecuta /api/netcheck en una función de
+  # Vercel, que abre una conexión TCP a cada puerto del VPS y devuelve el
+  # resultado como métricas (simon_netcheck_*). Mide la ruta que usa la app,
+  # que node-exporter no puede ver desde dentro.
+  - job_name: vercel-netcheck
+    scheme: https
+    metrics_path: /api/netcheck
+    params:
+      format: [prometheus]
+    scrape_interval: 60s
+    scrape_timeout: 20s
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/netcheck_token
+    static_configs:
+      - targets: ["app.simonthinks.ai"]

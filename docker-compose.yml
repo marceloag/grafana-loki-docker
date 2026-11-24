@@ -68,6 +68,8 @@ services:
       - "9090:9090"
     volumes:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Bearers de los targets externos (p. ej. netcheck_token). Fuera de git.
+      - ./secrets:/etc/prometheus/secrets:ro
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
